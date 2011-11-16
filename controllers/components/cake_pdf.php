@@ -54,9 +54,9 @@ class CakePdfComponent extends Object {
 	 */
 	public function beforeRender(&$controller) {
 		if (true === $this->_defaults['debug'] || true === $this->checkPrefix($this->controller->action)) {
-			return true;
-		} else {
 			$this->controller->layout = 'pdf';
+		} else {
+			return true;
 		}
 	}
 
@@ -68,23 +68,25 @@ class CakePdfComponent extends Object {
 	 * @return void
 	 */
 	public function shutdown(&$controller) {
-		if (true === $this->_defaults['debug'] || false === $this->checkPrefix($this->controller->action)) {
-			return true;
-		} else {
-			define("DOMPDF_ENABLE_REMOTE", true);
-			define("DOMPDF_UNICODE_ENABLED", true);
-			define("DOMPDF_DEFAULT_MEDIA_TYPE", "print");
-			define("DOMPDF_ENABLE_PHP", false);
-			if (!App::import('Vendor', 'CakePdf.dompdf', array('file' => 'dompdf' . DS . 'dompdf_config.inc.php'))) {
-				throw new CakePdfException('dompdf not found.');
+		if (false === $this->_defaults['debug']) {
+			if (true === $this->checkPrefix($this->controller->action)) {
+				define("DOMPDF_ENABLE_REMOTE", true);
+				define("DOMPDF_UNICODE_ENABLED", true);
+				define("DOMPDF_DEFAULT_MEDIA_TYPE", "print");
+				define("DOMPDF_ENABLE_PHP", false);
+				if (!App::import('Vendor', 'CakePdf.dompdf', array('file' => 'dompdf' . DS . 'dompdf_config.inc.php'))) {
+					throw new CakePdfException('dompdf not found.');
+				}
+				$domPdf = new DOMPDF();
+				$domPdf->set_base_path('http://' . $_SERVER['HTTP_HOST']);
+				$domPdf->load_html($this->controller->output);
+				$this->controller->output = null;
+				$domPdf->set_paper($this->_defaults['papper'], $this->_defaults['orientation']);
+				$domPdf->render();
+				$domPdf->stream($this->controller->action);
+			} else {
+				return true;
 			}
-			$domPdf = new DOMPDF();
-			$domPdf->set_base_path('http://' . $_SERVER['HTTP_HOST']);
-			$domPdf->load_html($this->controller->output);
-			$this->controller->output = null;
-			$domPdf->set_paper($this->_defaults['papper'], $this->_defaults['orientation']);
-			$domPdf->render();
-			$domPdf->stream($this->controller->action);
 		}
 	}
 
